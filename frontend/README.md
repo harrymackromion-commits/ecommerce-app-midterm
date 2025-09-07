@@ -17,10 +17,7 @@ If you are developing a production application, we recommend using TypeScript wi
  * Frontend Setup 
  * Backend Setup
  * API Endpoints
- * Image Upload & Display
- * Cart Functionality
- * Authentication
- * Troubleshooting
+
 
  ## Backend 
   * Api
@@ -64,3 +61,11 @@ If you are developing a production application, we recommend using TypeScript wi
 - POST /api/auth/logout.php — Logout
 - POST /api/auth/updateProfile.php — Update profile
 - GET /api/auth/Userlog.php — Get logged-in use
+
+* Cart Function:
+- remove cart
+- clear cart
+- totalPrice
+
+Authentication 
+- AuthContext - handle login/logout/userstate

@@ -16,6 +16,7 @@ import { useAuth } from "../../Context/AuthContext";
 
 export default function Navbar() {
   const [cartOpen, setCartOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const { cartCount } = useContext(CartContext);
   const { user, logout, loading } = useAuth();
   const navigate = useNavigate();
@@ -23,6 +24,13 @@ export default function Navbar() {
   const handleLogout = async () => {
     await logout();
     navigate("/");
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      navigate(`/products?search=${encodeURIComponent(searchTerm.trim())}`);
+    }
   };
 
   return (
@@ -89,12 +97,17 @@ export default function Navbar() {
 
           {/* Collapse */}
           <div className="collapse navbar-collapse" id="navbarNav">
-            <form className="d-none d-lg-flex mx-auto w-50">
+            <form
+              className="d-none d-lg-flex mx-auto w-50"
+              onSubmit={handleSearch}
+            >
               <input
                 className="form-control me-2 rounded-pill"
                 type="search"
                 placeholder="Search products..."
                 aria-label="Search"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
               <button
                 className="btn btn-outline-dark rounded-pill"

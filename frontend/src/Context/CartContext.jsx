@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect, useCallback, useMemo} from "react";
 
 export const CartContext = createContext();
 
@@ -23,7 +23,7 @@ export const CartProvider = ({ children }) => {
   }, []);
 
  
-  const addToCart = async (product) => {
+  const addToCart = useCallback(async (product) => {
     try {
       const res = await fetch("http://localhost:8000/api/cart/add.php", {
         method: "POST",
@@ -36,7 +36,7 @@ export const CartProvider = ({ children }) => {
     } catch (err) {
       console.error("Failed to add to cart:", err);
     }
-  };
+  } ,[] );
 
 
   const removeFromCart = async (productId) => {
@@ -69,9 +69,16 @@ export const CartProvider = ({ children }) => {
   };
 
 
-  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const cartCount = useMemo(
+    () => cartItems.reduce((sum, item) => sum + item.quantity, 0),
+    [cartItems]
+  );
 
-  const totalPrice = cartItems.reduce((sum, item) => sum + item.price, "");
+
+  const totalPrice = useMemo(
+    () => cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    [cartItems]
+  );
 
   return (
     <CartContext.Provider

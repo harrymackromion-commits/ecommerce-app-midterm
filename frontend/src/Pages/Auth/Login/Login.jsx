@@ -6,6 +6,7 @@ export default function Login() {
   const { redirect } = useRedirect();
   const [form, setForm] = useState({ email: "", password: "" });
   const [message, setMessage] = useState("");
+  const [focused,setFocused] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -51,6 +52,9 @@ export default function Login() {
             required
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
+            style={{ borderColor: focused ? "green" : "#ced4da" }}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
           />
           <input
             type="password"
@@ -59,6 +63,9 @@ export default function Login() {
             required
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
+            style={{ borderColor: focused ? "green" : "#ced4da" }}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
           />
           <button type="submit" className="btn btn-success fw-semibold">
             Login
