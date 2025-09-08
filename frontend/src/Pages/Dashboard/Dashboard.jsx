@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 
 export default function Dashboard() {
   const [products, setProducts] = useState([]);
+  const [ordersByMe, setOrdersByMe] = useState([]);
+  const [ordersOnMyProducts, setOrdersOnMyProducts] = useState([]);
   const [showProductModal, setShowProductModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [productForm, setProductForm] = useState({
@@ -19,6 +21,7 @@ export default function Dashboard() {
     password: "",
   });
 
+  // Load my products
   const loadProducts = async () => {
     try {
       const res = await fetch(
@@ -32,32 +35,61 @@ export default function Dashboard() {
     }
   };
 
+  // Load profile
+  const loadProfile = async () => {
+    try {
+      const res = await fetch("http://localhost:8000/api/auth/Userlog.php", {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setProfile({
+          username: data.user.username || "",
+          email: data.user.email || "",
+          password: "",
+        });
+      }
+    } catch (err) {
+      console.error("Failed to load profile:", err);
+    }
+  };
+
+  // Load orders I placed
+  const loadOrdersByMe = async () => {
+    try {
+      const res = await fetch("http://localhost:8000/api/order/get.php", {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (data.success) setOrdersByMe(data.orders || []);
+    } catch (err) {
+      console.error("Failed to load my orders:", err);
+    }
+  };
+
+  // Load orders on my products (as seller)
+  const loadOrdersOnMyProducts = async () => {
+    try {
+      const res = await fetch("http://localhost:8000/api/order/bySeller.php", {
+        credentials: "include",
+      });
+      const data = await res.json();
+      console.log("Orders on my products:", data); // <--- add this
+      if (data.success) setOrdersOnMyProducts(data.orders || []);
+    } catch (err) {
+      console.error("Failed to load orders on my products:", err);
+    }
+  };
+
+
   useEffect(() => {
     loadProducts();
-  }, []);
-
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const res = await fetch("http://localhost:8000/api/auth/Userlog.php", {
-          credentials: "include",
-        });
-        const data = await res.json();
-        if (data.success) {
-          setProfile({
-            username: data.user.username || "",
-            email: data.user.email || "",
-            password: "",
-          });
-        }
-      } catch (err) {
-        console.error("Failed to load profile:", err);
-      }
-    };
-
     loadProfile();
+    loadOrdersByMe();
+    loadOrdersOnMyProducts();
   }, []);
 
+  // Handle Product Form
   const handleProductChange = (e) => {
     const { name, value, files } = e.target;
     if (name === "image") {
@@ -76,27 +108,27 @@ export default function Dashboard() {
 
   const handleSubmitProduct = async (e) => {
     e.preventDefault();
-    const formData = new FormData();
-    formData.append("name", productForm.name);
-    formData.append("price", productForm.price);
-    formData.append("description", productForm.description);
-    if (productForm.image) formData.append("image", productForm.image);
-
-    let url = "http://localhost:8000/api/product/addProduct.php";
-    if (editingProduct) {
-      url = "http://localhost:8000/api/product/updateProduct.php";
-      formData.append("id", editingProduct.id);
-    }
-
     try {
+      const formData = new FormData();
+      formData.append("name", productForm.name);
+      formData.append("price", productForm.price);
+      formData.append("description", productForm.description);
+      if (productForm.image) formData.append("image", productForm.image);
+
+      let url = "http://localhost:8000/api/product/addProduct.php";
+      if (editingProduct) {
+        url = "http://localhost:8000/api/product/updateProduct.php";
+        formData.append("id", editingProduct.id);
+      }
+
       const res = await fetch(url, {
         method: "POST",
         body: formData,
-        credentials: "include", 
+        credentials: "include",
       });
       const data = await res.json();
       if (data.success) {
-        loadProducts();
+        await loadProducts();
         resetProductForm();
         setShowProductModal(false);
       } else {
@@ -128,7 +160,7 @@ export default function Dashboard() {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id }),
-          credentials: "include", 
+          credentials: "include",
         }
       );
       const data = await res.json();
@@ -138,6 +170,7 @@ export default function Dashboard() {
     }
   };
 
+  // Handle Profile Form
   const handleProfileChange = (e) => {
     const { name, value } = e.target;
     setProfile({ ...profile, [name]: value });
@@ -146,12 +179,15 @@ export default function Dashboard() {
   const handleSubmitProfile = async (e) => {
     e.preventDefault();
     try {
+      const payload = { username: profile.username, email: profile.email };
+      if (profile.password) payload.password = profile.password;
+
       const res = await fetch(
         "http://localhost:8000/api/auth/updateProfile.php",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(profile),
+          body: JSON.stringify(payload),
           credentials: "include",
         }
       );
@@ -188,7 +224,8 @@ export default function Dashboard() {
       </div>
 
       {/* Products List */}
-      <ul className="list-group">
+      <h4>My Products</h4>
+      <ul className="list-group mb-4">
         {products.map((p) => (
           <li
             key={p.id}
@@ -227,6 +264,63 @@ export default function Dashboard() {
                 Delete
               </button>
             </div>
+          </li>
+        ))}
+      </ul>
+
+      {/* Orders I Placed */}
+      <h4>My Orders</h4>
+      <ul className="list-group mb-4">
+        {ordersByMe.map((order) => (
+          <li key={order.order_id} className="list-group-item">
+            <strong>Order #{order.order_id}</strong> - Total: ₱
+            {order.total_price} -
+            <em>{new Date(order.created_at).toLocaleString()}</em>
+            <ul className="mt-2">
+              {order.items.map((item) => (
+                <li
+                  key={item.product_id || item.name}
+                  className="d-flex align-items-center mb-2"
+                >
+                  {item.image && (
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      style={{ width: "50px", marginRight: "10px" }}
+                    />
+                  )}
+                  {item.name} x {item.quantity} - ₱{item.price}
+                </li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ul>
+
+      <h4>Orders on My Products</h4>
+      <ul className="list-group mb-4">
+        {ordersOnMyProducts.map((order) => (
+          <li key={order.order_id} className="list-group-item">
+            <strong>Order #{order.order_id}</strong> - Buyer: {order.buyer} -
+            Total: ₱{order.total_price} -{" "}
+            <em>{new Date(order.created_at).toLocaleString()}</em>
+            <ul>
+              {order.items.map((item, index) => (
+                <li
+                  key={item.product_id || index}
+                  className="d-flex align-items-center mb-2"
+                >
+                  {item.image && (
+                    <img
+                      src={item.image}
+                      alt={item.product_name}
+                      style={{ width: "50px", marginRight: "10px" }}
+                    />
+                  )}
+                  {item.product_name} x {item.quantity} - ₱{item.price}
+                </li>
+              ))}
+            </ul>
           </li>
         ))}
       </ul>

@@ -54,7 +54,6 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-
   const clearCart = async () => {
     try {
       const res = await fetch("http://localhost:8000/api/cart/clear.php", {
@@ -80,9 +79,48 @@ export const CartProvider = ({ children }) => {
     [cartItems]
   );
 
+  const checkout = async () => {
+    if (cartItems.length === 0) return;
+
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/cart/checkout.php",
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            cartItems: cartItems.map((item) => ({
+              id: item.id,
+              quantity: item.quantity,
+              price: item.price,
+            })),
+            totalPrice: cartItems.reduce(
+              (sum, item) => sum + item.price * item.quantity,
+              0
+            ),
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert("Checkout failed: " + data.message);
+        return;
+      }
+
+      setCartItems([]);
+      alert(`Order #${data.order_id} successfully placed!`);
+    } catch (err) {
+      console.error("Checkout exception:", err);
+      alert("An error occurred during checkout.");
+    }
+  };
+
   return (
     <CartContext.Provider
-      value={{ cartItems, addToCart, removeFromCart, clearCart, cartCount , totalPrice }}
+      value={{ cartItems, addToCart, removeFromCart, checkout, clearCart, cartCount , totalPrice }}
     >
       {children}
     </CartContext.Provider>

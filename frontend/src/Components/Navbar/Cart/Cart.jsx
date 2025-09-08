@@ -3,7 +3,7 @@ import { CartContext } from "../../../Context/CartContext";
 import { X } from "lucide-react"; 
 
 export default function Cart({ onClose }) {
-  const { cartItems, removeFromCart, clearCart, totalPrice, } =
+  const { cartItems, removeFromCart, checkout, clearCart, totalPrice, } =
     useContext(CartContext);
 
   if (cartItems.length === 0)
@@ -86,7 +86,7 @@ export default function Cart({ onClose }) {
                 </button>
                 <button
                   className="btn btn-success btn-sm"
-                  onClick={() => removeFromCart(item.id)}
+                  onClick={() => checkout()}
                 >
                   Checkout
                 </button>
